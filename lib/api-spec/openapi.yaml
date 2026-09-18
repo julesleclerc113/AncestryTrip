@@ -10,6 +10,18 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: trips
+    description: Heritage trip generation and examples
+  - name: reports
+    description: Paid report retrieval
+  - name: content
+    description: Public editorial content
+  - name: checkout
+    description: Purchase flows
+  - name: support
+    description: Customer support
+  - name: admin
+    description: Owner dashboard metrics
 paths:
   /healthz:
     get:
@@ -24,6 +36,140 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /trips/preview:
+    post:
+      operationId: createTripPreview
+      tags: [trips]
+      summary: Generate a free heritage trip preview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripPreviewInput"
+      responses:
+        "200":
+          description: Generated preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripPreview"
+        "400":
+          description: Invalid trip details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Preview limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /trips/example:
+    get:
+      operationId: getExampleTrip
+      tags: [trips]
+      summary: Get the featured example trip
+      responses:
+        "200":
+          description: Example trip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripPreview"
+  /checkout:
+    post:
+      operationId: createCheckout
+      tags: [checkout]
+      summary: Create a one-time report checkout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutInput"
+      responses:
+        "200":
+          description: Checkout session intent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSession"
+        "400":
+          description: Invalid checkout request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /reports/{token}:
+    get:
+      operationId: getReport
+      tags: [reports]
+      summary: Retrieve a report by its access token
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaidReport"
+        "404":
+          description: Report not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /content/articles:
+    get:
+      operationId: listArticles
+      tags: [content]
+      summary: List editorial articles
+      responses:
+        "200":
+          description: Articles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Article"
+  /support:
+    post:
+      operationId: createSupportTicket
+      tags: [support]
+      summary: Send a customer support message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportTicketInput"
+      responses:
+        "201":
+          description: Ticket received
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportTicket"
+  /admin/summary:
+    get:
+      operationId: getAdminSummary
+      tags: [admin]
+      summary: Get owner dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSummary"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +179,188 @@ components:
           type: string
       required:
         - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    TripPreviewInput:
+      type: object
+      properties:
+        country:
+          type: string
+          minLength: 2
+        region:
+          type: ["string", "null"]
+        city:
+          type: ["string", "null"]
+        surname:
+          type: ["string", "null"]
+        firstName:
+          type: ["string", "null"]
+        birthYear:
+          type: ["integer", "null"]
+        deathYear:
+          type: ["integer", "null"]
+        destination:
+          type: string
+          minLength: 2
+        tripLength:
+          type: integer
+          minimum: 1
+          maximum: 30
+        budget:
+          type: string
+        interests:
+          type: array
+          items:
+            type: string
+          minItems: 1
+      required: [country, destination, tripLength, budget, interests]
+    TripPreview:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        locationLabel: { type: string }
+        interpretation: { type: string }
+        places:
+          type: array
+          items:
+            $ref: "#/components/schemas/TripPlace"
+        sampleDay:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItineraryItem"
+        historicalContext: { type: string }
+        researchChecklist:
+          type: array
+          items: { type: string }
+        disclaimer: { type: string }
+        tripLength: { type: integer }
+        destination: { type: string }
+        generatedAt: { type: string }
+      required:
+        [id, title, locationLabel, interpretation, places, sampleDay, historicalContext, researchChecklist, disclaimer, tripLength, destination, generatedAt]
+    TripPlace:
+      type: object
+      properties:
+        name: { type: string }
+        type: { type: string }
+        description: { type: string }
+        certainty: { type: string }
+        sourceUrl: { type: ["string", "null"] }
+      required: [name, type, description, certainty, sourceUrl]
+    ItineraryItem:
+      type: object
+      properties:
+        time: { type: string }
+        title: { type: string }
+        description: { type: string }
+        category: { type: string }
+      required: [time, title, description, category]
+    CheckoutInput:
+      type: object
+      properties:
+        previewId: { type: string }
+        product:
+          type: string
+          enum: [heritage-trip, deep-heritage-trip]
+        email:
+          type: string
+          format: email
+      required: [previewId, product, email]
+    CheckoutSession:
+      type: object
+      properties:
+        checkoutUrl: { type: string }
+        sessionId: { type: string }
+        product: { type: string }
+        price: { type: integer }
+        demoMode: { type: boolean }
+      required: [checkoutUrl, sessionId, product, price, demoMode]
+    PaidReport:
+      type: object
+      properties:
+        id: { type: string }
+        token: { type: string }
+        product: { type: string }
+        title: { type: string }
+        status: { type: string }
+        preview: { $ref: "#/components/schemas/TripPreview" }
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportSection"
+        createdAt: { type: string }
+      required: [id, token, product, title, status, preview, sections, createdAt]
+    ReportSection:
+      type: object
+      properties:
+        title: { type: string }
+        body: { type: string }
+        items:
+          type: array
+          items: { type: string }
+      required: [title, body, items]
+    Article:
+      type: object
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        excerpt: { type: string }
+        category: { type: string }
+        readTime: { type: string }
+        publishedAt: { type: string }
+      required: [slug, title, excerpt, category, readTime, publishedAt]
+    SupportTicketInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        email: { type: string, format: email }
+        message: { type: string, minLength: 10 }
+      required: [name, email, message]
+    SupportTicket:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string }
+        createdAt: { type: string }
+      required: [id, status, createdAt]
+    AdminSummary:
+      type: object
+      properties:
+        revenue: { type: number }
+        orders: { type: integer }
+        conversionRate: { type: number }
+        visitors: { type: integer }
+        previews: { type: integer }
+        failedReports: { type: integer }
+        topSources:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricItem"
+        topDestinations:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricItem"
+        briefing:
+          type: array
+          items:
+            $ref: "#/components/schemas/BriefingItem"
+      required: [revenue, orders, conversionRate, visitors, previews, failedReports, topSources, topDestinations, briefing]
+    MetricItem:
+      type: object
+      properties:
+        label: { type: string }
+        value: { type: number }
+      required: [label, value]
+    BriefingItem:
+      type: object
+      properties:
+        label: { type: string }
+        body: { type: string }
+        tone: { type: string }
+      required: [label, body, tone]
 

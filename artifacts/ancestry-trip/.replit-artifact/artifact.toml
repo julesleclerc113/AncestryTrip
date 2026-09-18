@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "AncestryTrip"
+description = "A consumer heritage travel app that turns family-history clues into meaningful, personalized ancestry trips with a free preview and printable paid reports."
+version = "1.0.0"
+id = "artifacts/ancestry-trip"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23256
+
+[services.development]
+run = "pnpm --filter @workspace/ancestry-trip run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ancestry-trip", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ancestry-trip/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23256"
+BASE_PATH = "/"
