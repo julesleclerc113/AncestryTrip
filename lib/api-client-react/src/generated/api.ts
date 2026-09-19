@@ -24,13 +24,15 @@ import type {
   Article,
   CheckoutInput,
   CheckoutSession,
+  CheckoutVerification,
   ErrorResponse,
   HealthStatus,
   PaidReport,
   SupportTicket,
   SupportTicketInput,
   TripPreview,
-  TripPreviewInput
+  TripPreviewInput,
+  VerifyCheckoutParams
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -390,6 +392,90 @@ export const useCreateCheckout = <TError = ErrorType<ErrorResponse>,
       > => {
       return useMutation(getCreateCheckoutMutationOptions(options));
     }
+
+export const getVerifyCheckoutUrl = (params: VerifyCheckoutParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/checkout/verify?${stringifiedParams}` : `/api/checkout/verify`
+}
+
+/**
+ * @summary Verify a completed Stripe Checkout Session
+ */
+export const verifyCheckout = async (params: VerifyCheckoutParams, options?: Parameters<typeof customFetch>[1]): Promise<CheckoutVerification> => {
+
+  return customFetch<CheckoutVerification>(getVerifyCheckoutUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getVerifyCheckoutQueryKey = (params?: VerifyCheckoutParams,) => {
+    return [
+    `/api/checkout/verify`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getVerifyCheckoutQueryOptions = <TData = Awaited<ReturnType<typeof verifyCheckout>>, TError = ErrorType<ErrorResponse>>(params: VerifyCheckoutParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof verifyCheckout>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getVerifyCheckoutQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof verifyCheckout>>> = ({ signal }) => verifyCheckout(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof verifyCheckout>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type VerifyCheckoutQueryResult = NonNullable<Awaited<ReturnType<typeof verifyCheckout>>>
+export type VerifyCheckoutQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Verify a completed Stripe Checkout Session
+ */
+
+export function useVerifyCheckout<TData = Awaited<ReturnType<typeof verifyCheckout>>, TError = ErrorType<ErrorResponse>>(
+ params: VerifyCheckoutParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof verifyCheckout>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getVerifyCheckoutQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetReportUrl = (token: string,) => {
 

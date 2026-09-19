@@ -25,6 +25,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
 
@@ -40,6 +41,9 @@ export const tripRequestsTable = pgTable("trip_requests", {
   customerId: integer("customer_id"),
   input: jsonb("input").notNull(),
   preview: jsonb("preview").notNull(),
+  aiModelOutput: jsonb("ai_model_output"),
+  aiGeneratedAt: timestamp("ai_generated_at", { withTimezone: true }),
+  aiGenerationStatus: text("ai_generation_status").notNull().default("not_requested"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -61,8 +65,30 @@ export const reportsTable = pgTable("reports", {
   product: text("product").notNull(),
   status: text("status").notNull().default("ready"),
   content: jsonb("content").notNull(),
+  aiModelOutput: jsonb("ai_model_output"),
+  aiGeneratedAt: timestamp("ai_generated_at", { withTimezone: true }),
+  aiGenerationStatus: text("ai_generation_status").notNull().default("not_requested"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const aiUsageTable = pgTable(
+  "ai_usage",
+  {
+    id: serial("id").primaryKey(),
+    usageKey: text("usage_key").notNull(),
+    requestType: text("request_type").notNull(),
+    windowStarted: timestamp("window_started", { withTimezone: true }).notNull(),
+    requestCount: integer("request_count").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    usageWindowKey: uniqueIndex("ai_usage_window_key").on(
+      table.usageKey,
+      table.requestType,
+      table.windowStarted,
+    ),
+  }),
+);
 
 export const reportItemsTable = pgTable("report_items", {
   id: serial("id").primaryKey(),

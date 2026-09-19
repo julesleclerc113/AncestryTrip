@@ -6,9 +6,9 @@ import {
   GetExampleTripResponse,
 } from "@workspace/api-zod";
 import { buildExamplePreview, buildPreview } from "../lib/trip-generator";
+import { AiServiceError, generateFreePreview } from "../lib/ai-service";
 
 const router: IRouter = Router();
-const previewAttempts = new Map<string, { count: number; resetAt: number }>();
 
 router.post("/trips/preview", async (req, res): Promise<void> => {
   const parsed = CreateTripPreviewBody.safeParse(req.body);
@@ -18,24 +18,46 @@ router.post("/trips/preview", async (req, res): Promise<void> => {
     return;
   }
 
-  const key = req.ip || "anonymous";
-  const now = Date.now();
-  const previous = previewAttempts.get(key);
-  if (previous && previous.resetAt > now && previous.count >= 5) {
-    res.status(429).json({ error: "You have reached the preview limit for now. Please try again later." });
-    return;
+  let preview = buildPreview(parsed.data);
+  let aiModelOutput: unknown = null;
+  let aiGeneratedAt: Date | null = null;
+  let aiGenerationStatus = "fallback";
+  try {
+    const result = await generateFreePreview(parsed.data, req.ip || "anonymous");
+    preview = {
+      ...preview,
+      ...result.data,
+      id: preview.id,
+      tripLength: parsed.data.tripLength,
+      destination: parsed.data.destination,
+      generatedAt: result.generatedAt,
+      evidenceBoundary: {
+        userProvidedFacts: { ...parsed.data },
+        aiGenerated: true,
+        uncertainties: result.data.uncertainties,
+      },
+    };
+    aiModelOutput = result.rawOutput;
+    aiGeneratedAt = new Date(result.generatedAt);
+    aiGenerationStatus = "succeeded";
+  } catch (error) {
+    if (error instanceof AiServiceError && error.code === "rate_limited") {
+      res.status(429).json({ error: "You have reached the AI preview limit for now. Please try again later." });
+      return;
+    }
   }
-  previewAttempts.set(key, {
-    count: previous && previous.resetAt > now ? previous.count + 1 : 1,
-    resetAt: previous && previous.resetAt > now ? previous.resetAt : now + 24 * 60 * 60 * 1000,
-  });
 
-  const preview = buildPreview(parsed.data);
   const [request] = await db.insert(tripRequestsTable).values({
     input: parsed.data,
     preview,
+    aiModelOutput,
+    aiGeneratedAt,
+    aiGenerationStatus,
   }).returning({ id: tripRequestsTable.id });
-  await db.insert(analyticsEventsTable).values({ name: "free_preview_generated" });
+  await db.insert(analyticsEventsTable).values({
+    name: "free_preview_generated",
+    metadata: { aiRequestType: "free_preview", aiStatus: aiGenerationStatus },
+  });
   res.json(CreateTripPreviewResponse.parse({ ...preview, id: String(request.id) }));
 });
 

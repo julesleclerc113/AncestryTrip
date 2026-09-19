@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { EvidenceBoundary } from './evidenceBoundary';
 import type { ReportSection } from './reportSection';
 import type { TripPreview } from './tripPreview';
 
@@ -16,5 +17,6 @@ export interface PaidReport {
   status: string;
   preview: TripPreview;
   sections: ReportSection[];
+  evidenceBoundary: EvidenceBoundary;
   createdAt: string;
 }

@@ -102,6 +102,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /checkout/verify:
+    get:
+      operationId: verifyCheckout
+      tags: [checkout]
+      summary: Verify a completed Stripe Checkout Session
+      parameters:
+        - name: sessionId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Checkout verification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutVerification"
+        "400":
+          description: Invalid or incomplete payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /reports/{token}:
     get:
       operationId: getReport
@@ -241,8 +265,10 @@ components:
         tripLength: { type: integer }
         destination: { type: string }
         generatedAt: { type: string }
+        evidenceBoundary:
+          $ref: "#/components/schemas/EvidenceBoundary"
       required:
-        [id, title, locationLabel, interpretation, places, sampleDay, historicalContext, researchChecklist, disclaimer, tripLength, destination, generatedAt]
+        [id, title, locationLabel, interpretation, places, sampleDay, historicalContext, researchChecklist, disclaimer, tripLength, destination, generatedAt, evidenceBoundary]
     TripPlace:
       type: object
       properties:
@@ -280,6 +306,13 @@ components:
         price: { type: integer }
         demoMode: { type: boolean }
       required: [checkoutUrl, sessionId, product, price, demoMode]
+    CheckoutVerification:
+      type: object
+      properties:
+        verified: { type: boolean }
+        status: { type: string }
+        reportToken: { type: ["string", "null"] }
+      required: [verified, status, reportToken]
     PaidReport:
       type: object
       properties:
@@ -293,8 +326,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ReportSection"
+        evidenceBoundary:
+          $ref: "#/components/schemas/EvidenceBoundary"
         createdAt: { type: string }
-      required: [id, token, product, title, status, preview, sections, createdAt]
+      required: [id, token, product, title, status, preview, sections, evidenceBoundary, createdAt]
     ReportSection:
       type: object
       properties:
@@ -304,6 +339,17 @@ components:
           type: array
           items: { type: string }
       required: [title, body, items]
+    EvidenceBoundary:
+      type: object
+      properties:
+        userProvidedFacts:
+          type: object
+          additionalProperties: true
+        aiGenerated: { type: boolean }
+        uncertainties:
+          type: array
+          items: { type: string }
+      required: [userProvidedFacts, aiGenerated, uncertainties]
     Article:
       type: object
       properties:

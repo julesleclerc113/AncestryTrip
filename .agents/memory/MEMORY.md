@@ -1,0 +1,1 @@
+- [Stripe integration setup](stripe-integration.md) — preserve connector credential aliases and externalize StripeSync so runtime migrations are available.

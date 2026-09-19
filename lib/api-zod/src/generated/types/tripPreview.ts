@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { EvidenceBoundary } from './evidenceBoundary';
 import type { ItineraryItem } from './itineraryItem';
 import type { TripPlace } from './tripPlace';
 
@@ -21,4 +22,5 @@ export interface TripPreview {
   tripLength: number;
   destination: string;
   generatedAt: string;
+  evidenceBoundary: EvidenceBoundary;
 }

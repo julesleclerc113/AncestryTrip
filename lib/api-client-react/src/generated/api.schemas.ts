@@ -56,6 +56,14 @@ export interface ItineraryItem {
   category: string;
 }
 
+export type EvidenceBoundaryUserProvidedFacts = { [key: string]: unknown };
+
+export interface EvidenceBoundary {
+  userProvidedFacts: EvidenceBoundaryUserProvidedFacts;
+  aiGenerated: boolean;
+  uncertainties: string[];
+}
+
 export interface TripPreview {
   id: string;
   title: string;
@@ -69,6 +77,7 @@ export interface TripPreview {
   tripLength: number;
   destination: string;
   generatedAt: string;
+  evidenceBoundary: EvidenceBoundary;
 }
 
 export type CheckoutInputProduct = typeof CheckoutInputProduct[keyof typeof CheckoutInputProduct];
@@ -93,6 +102,13 @@ export interface CheckoutSession {
   demoMode: boolean;
 }
 
+export interface CheckoutVerification {
+  verified: boolean;
+  status: string;
+  /** @nullable */
+  reportToken: string | null;
+}
+
 export interface ReportSection {
   title: string;
   body: string;
@@ -107,6 +123,7 @@ export interface PaidReport {
   status: string;
   preview: TripPreview;
   sections: ReportSection[];
+  evidenceBoundary: EvidenceBoundary;
   createdAt: string;
 }
 
@@ -155,4 +172,8 @@ export interface AdminSummary {
   topDestinations: MetricItem[];
   briefing: BriefingItem[];
 }
+
+export type VerifyCheckoutParams = {
+sessionId: string;
+};
 

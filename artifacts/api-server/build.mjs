@@ -94,6 +94,8 @@ async function buildAll() {
       "usb",
       "workerd",
       "wrangler",
+      "stripe",
+      "stripe-replit-sync",
       "zeromq",
       "zeromq-prebuilt",
       "playwright",

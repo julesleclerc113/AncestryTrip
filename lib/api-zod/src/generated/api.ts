@@ -66,7 +66,12 @@ export const CreateTripPreviewResponse = zod.object({
   "disclaimer": zod.string(),
   "tripLength": zod.number().int(),
   "destination": zod.string(),
-  "generatedAt": zod.string()
+  "generatedAt": zod.string(),
+  "evidenceBoundary": zod.object({
+  "userProvidedFacts": zod.record(zod.string(), zod.unknown()),
+  "aiGenerated": zod.boolean(),
+  "uncertainties": zod.array(zod.string())
+})
 })
 
 
@@ -96,7 +101,12 @@ export const GetExampleTripResponse = zod.object({
   "disclaimer": zod.string(),
   "tripLength": zod.number().int(),
   "destination": zod.string(),
-  "generatedAt": zod.string()
+  "generatedAt": zod.string(),
+  "evidenceBoundary": zod.object({
+  "userProvidedFacts": zod.record(zod.string(), zod.unknown()),
+  "aiGenerated": zod.boolean(),
+  "uncertainties": zod.array(zod.string())
+})
 })
 
 
@@ -115,6 +125,20 @@ export const CreateCheckoutResponse = zod.object({
   "product": zod.string(),
   "price": zod.number().int(),
   "demoMode": zod.boolean()
+})
+
+
+/**
+ * @summary Verify a completed Stripe Checkout Session
+ */
+export const VerifyCheckoutQueryParams = zod.object({
+  "sessionId": zod.coerce.string()
+})
+
+export const VerifyCheckoutResponse = zod.object({
+  "verified": zod.boolean(),
+  "status": zod.string(),
+  "reportToken": zod.string().nullable()
 })
 
 
@@ -154,13 +178,23 @@ export const GetReportResponse = zod.object({
   "disclaimer": zod.string(),
   "tripLength": zod.number().int(),
   "destination": zod.string(),
-  "generatedAt": zod.string()
+  "generatedAt": zod.string(),
+  "evidenceBoundary": zod.object({
+  "userProvidedFacts": zod.record(zod.string(), zod.unknown()),
+  "aiGenerated": zod.boolean(),
+  "uncertainties": zod.array(zod.string())
+})
 }),
   "sections": zod.array(zod.object({
   "title": zod.string(),
   "body": zod.string(),
   "items": zod.array(zod.string())
 })),
+  "evidenceBoundary": zod.object({
+  "userProvidedFacts": zod.record(zod.string(), zod.unknown()),
+  "aiGenerated": zod.boolean(),
+  "uncertainties": zod.array(zod.string())
+}),
   "createdAt": zod.string()
 })
 

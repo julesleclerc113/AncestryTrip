@@ -24,6 +24,19 @@ export type PreviewShape = {
   tripLength: number;
   destination: string;
   generatedAt: string;
+  evidenceBoundary: EvidenceBoundary;
+};
+
+export type EvidenceBoundary = {
+  userProvidedFacts: Record<string, unknown>;
+  aiGenerated: boolean;
+  uncertainties: string[];
+};
+
+export type PaidReportSection = {
+  title: string;
+  body: string;
+  items: string[];
 };
 
 const disclaimer =
@@ -111,6 +124,14 @@ export function buildPreview(input: any, id = randomUUID()): PreviewShape {
     tripLength: input.tripLength,
     destination: input.destination,
     generatedAt: new Date().toISOString(),
+    evidenceBoundary: {
+      userProvidedFacts: { ...input },
+      aiGenerated: false,
+      uncertainties: [
+        "A surname alone does not establish ancestry or a family relationship.",
+        "Suggested places and context are not proof about a specific person.",
+      ],
+    },
   };
 }
 
@@ -130,8 +151,22 @@ export function buildExamplePreview(): PreviewShape {
   );
 }
 
-export function buildPaidReport(preview: PreviewShape, product: string, token: string) {
+export function buildPaidReport(
+  preview: PreviewShape,
+  product: string,
+  token: string,
+  options?: {
+    userProvidedFacts?: Record<string, unknown>;
+    sections?: PaidReportSection[];
+    uncertainties?: string[];
+  },
+) {
   const deep = product === "deep-heritage-trip";
+  const existingBoundary = preview.evidenceBoundary ?? {
+    userProvidedFacts: {},
+    aiGenerated: false,
+    uncertainties: [],
+  };
   return {
     id: randomUUID(),
     token,
@@ -139,7 +174,12 @@ export function buildPaidReport(preview: PreviewShape, product: string, token: s
     title: deep ? `Deep Heritage Trip: ${preview.locationLabel}` : `Heritage Trip: ${preview.locationLabel}`,
     status: "ready",
     preview,
-    sections: [
+    evidenceBoundary: {
+      userProvidedFacts: options?.userProvidedFacts ?? existingBoundary.userProvidedFacts,
+      aiGenerated: Boolean(options?.sections),
+      uncertainties: options?.uncertainties ?? existingBoundary.uncertainties,
+    } satisfies EvidenceBoundary,
+    sections: options?.sections ?? [
       {
         title: "How to use this report",
         body:
